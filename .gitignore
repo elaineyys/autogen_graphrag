@@ -2,6 +2,9 @@ venv
 input
 cache
 output
-settings.yaml
 .env
 prompts
+.cache/
+.chainlit/
+__pycache__/
+utils/__pycache__/
