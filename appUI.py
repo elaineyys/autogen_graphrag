@@ -6,7 +6,8 @@ from chainlit.input_widget import (
    Select, Slider, Switch)
 from autogen import AssistantAgent, UserProxyAgent
 from utils.chainlit_agents import ChainlitUserProxyAgent, ChainlitAssistantAgent
-from graphrag.query.cli import run_global_search, run_local_search
+# from graphrag.query.cli import run_global_search, run_local_search
+from graphrag.cli.query import run_global_search, run_local_search
 
 # LLama3 LLM from Lite-LLM Server for Agents #
 llm_config_autogen = {
