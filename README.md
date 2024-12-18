@@ -1,3 +1,6 @@
+Documentation of updates to this repository and previous experiments with Autogen can be accessed here: https://docs.google.com/document/d/1tGtQ5FUt3f4I1P0zCuaDJM9SFQxoGYx3CIGP1y6jS6g/edit?tab=t.0
+
+
 # GraphRAG + AutoGen + Ollama + Chainlit UI = Local Multi-Agent RAG Superbot  
 
 ![Graphical Abstract](https://github.com/karthik-codex/autogen_graphRAG/blob/main/images/1721017707759.jpg?raw=true)
