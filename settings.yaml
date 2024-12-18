@@ -4,7 +4,8 @@ skip_workflows: []
 llm:
   api_key: ${GRAPHRAG_API_KEY}
   type: openai_chat # or azure_openai_chat
-  model: llama3:latest
+  # model: llama3:latest
+  model: mistral:latest
   model_supports_json: true # recommended if this is available for your model.
   # max_tokens: 4000
   # request_timeout: 180.0
@@ -62,7 +63,7 @@ input:
   file_type: text # or csv
   base_dir: "input/markdown"
   file_encoding: utf-8
-  file_pattern: ".*\\.txt$"
+  file_pattern: ".*\\.md$"
 
 cache:
   type: file # or blob
@@ -86,8 +87,9 @@ entity_extraction:
   ## llm: override the global llm settings for this task
   ## parallelization: override the global parallelization settings for this task
   ## async_mode: override the global async_mode settings for this task
-  prompt: "prompts/entity_extraction.txt"
-  entity_types: [organization,person,geo,event]
+  # prompt: "prompts/entity_extraction.txt"
+  prompt: "prompts/entity_extraction_schema.txt"
+  # entity_types: [organization,person,geo,event]
   max_gleanings: 0
 
 summarize_descriptions:

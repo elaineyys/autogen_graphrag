@@ -52,15 +52,15 @@ async def on_chat_start():
     cl.user_session.set("Community", community)
     cl.user_session.set("Search_type", local_search)
 
-    # retriever   = AssistantAgent(
-    #    name="Retriever", 
-    #    llm_config=llm_config_autogen, 
-    #    system_message="""Only execute the function query_graphRAG to look for context. 
-    #                 Output 'TERMINATE' when an answer has been provided.""",
-    #    max_consecutive_auto_reply=1,
-    #    human_input_mode="NEVER", 
-    #    description="Retriever Agent"
-    # )
+    retriever   = AssistantAgent(
+       name="Retriever", 
+       llm_config=llm_config_autogen, 
+       system_message="""Only execute the function query_graphRAG to look for context. 
+                    Output 'TERMINATE' when an answer has been provided.""",
+       max_consecutive_auto_reply=1,
+       human_input_mode="NEVER", 
+       description="Retriever Agent"
+    )
 
     user_proxy = ChainlitUserProxyAgent(
         name="User_Proxy",
@@ -68,7 +68,7 @@ async def on_chat_start():
         llm_config=llm_config_autogen,
         is_termination_msg=lambda x: x.get("content", "").rstrip().endswith("TERMINATE"),
         code_execution_config=False,
-        system_message='''A human admin.''',
+        system_message='''A human admin. Interact with the retriever to provide any context''',
         description="User Proxy Agent"
     )
 
@@ -91,14 +91,9 @@ async def on_chat_start():
     assistant = autogen.AssistantAgent(
         name="Assistant",
         human_input_mode="NEVER",
-        system_message="""Only execute the function to retrieve for context.""",
-        llm_config=llm_config_autogen
-    )
-
-    helper = autogen.AssistantAgent(
-        name="Helper",
-        human_input_mode="NEVER",
-        system_message="""Interact with the retriever to provide any context.""",
+        system_message="""Only execute the function query_graphRAG to look for context. 
+                    Output 'TERMINATE' when an answer has been provided.""",
+        is_termination_msg=lambda x: x.get("content", "").find("TERMINATE") >= 0,
         llm_config=llm_config_autogen
     )
     
@@ -110,8 +105,7 @@ async def on_chat_start():
     cl.user_session.set("User Proxy", user_proxy)
     cl.user_session.set("Predictor", predictor)
     cl.user_session.set("Critic", critic)
-    # cl.user_session.set("Assistant", assistant)
-    cl.user_session.set("Helper", helper)
+    cl.user_session.set("Assistant", assistant)
 
     msg = cl.Message(content=f"""Hello! What task would you like to get done today?      
                      """, 
@@ -151,16 +145,9 @@ async def run_conversation(message: cl.Message):
     predictor = cl.user_session.get("Predictor")
     critic = cl.user_session.get("Critic")
     user_proxy = cl.user_session.get("User Proxy")
-    # assistant = cl.user_session.get("Assistant")
-    helper = cl.user_session.get("Helper")
+    assistant = cl.user_session.get("Assistant")
 
     print("Setting groupchat")
-
-    user_proxy.reset()
-    predictor.reset()
-    critic.reset()
-    helper.reset()
-    # assistant.reset()
 
     # def state_transition(last_speaker, groupchat):
     #     messages = groupchat.messages
@@ -177,37 +164,22 @@ async def run_conversation(message: cl.Message):
     #     else:
     #         pass
     #         return None
-        
-    previous = {"value": None}
-    def state_transition(last_speaker, groupchat):
-        messages = groupchat.messages
-        print("previous:", previous["value"])
-        if last_speaker is user_proxy:
-            previous["value"] = 'user_proxy'
-            return helper
-        elif last_speaker is helper:
-        #     return assistant
-        # if last_speaker is assistant:
-            # print(last_speaker, messages[-1]["content"].lower())
-            if previous['value'] == 'user_proxy':
-                previous['value'] = 'helper'
-                print('1')
-                return predictor
-            else: #previous['value'] == 'predictor'
-                previous['value'] = 'helper'
-                return critic
-        elif last_speaker is predictor:
-            if previous['value'] not in ['critic']: # == 'helper'
-                previous['value'] = 'predictor'
-                # return assistant
-                return helper
-            else: #previous['value'] == 'critic'
-                pass
-        elif last_speaker is critic:
-            previous['value'] = 'critic'
-            return predictor
-        else:
-            print(last_speaker, previous['value'])
+
+    def prediction_message(recipient, messages, sender, config):
+        return f"Please provide your CHF prediction based on the patient's medical records."
+
+    def reflection_message(recipient, messages, sender, config):
+        return f"Evaluate the prediction and provide feedback based on the guidelines provided."
+
+    def reprediction_message(recipient, messages, sender, config):
+        return f"Re-evaluate the prediction considering the feedback provided."
+
+
+    nested_chat_queue = [
+        {"recipient": predictor, "message": prediction_message, "summary_method": "last_msg", "max_turns": 1},
+        {"recipient": critic, "message": reflection_message, "summary_method": "last_msg", "max_turns": 1},
+        {"recipient": predictor, "message": reprediction_message, "summary_method": "last_msg", "max_turns": 1},
+    ]
     
     async def query_graphRAG(
           question: Annotated[str, 'Query string containing information that you want from RAG search']
@@ -230,43 +202,75 @@ async def run_conversation(message: cl.Message):
     #     print(agents)
     #     agents.register_for_execution()(d_retrieve_content)
 
-    for caller in [helper]:
+    for caller in [user_proxy, predictor, critic]:
         d_retrieve_content = caller.register_for_llm(
             description="retrieve content for code generation and question answering.", api_style="function"
         )(query_graphRAG)
 
-    # for agents in [helper, assistant]:
-    #     agents.register_for_execution()(d_retrieve_content)
-    for agents in [helper, predictor]:
+    for agents in [assistant]:
         agents.register_for_execution()(d_retrieve_content)
 
+    # groupchat = autogen.GroupChat(
+    #     agents=[user_proxy, retriever],
+    #     messages=[],
+    #     max_round=MAX_ITER,
+    #     # speaker_selection_method=state_transition,
+    #     allow_repeat_speaker=True,
+    # )
+
 #     groupchat = autogen.GroupChat(
-#         agents=[user_proxy, retriever],
+#         agents=[user_proxy, predictor],
 #         messages=[],
 #         max_round=MAX_ITER,
 #         # speaker_selection_method=state_transition,
 #         allow_repeat_speaker=True,
 #     )
+#     manager = autogen.GroupChatManager(groupchat=groupchat,
+#                                        llm_config=llm_config_autogen, 
+#                                        is_termination_msg=lambda x: x.get("content", "") and x.get("content", "").rstrip().endswith("TERMINATE"),
+#                                        code_execution_config=False,
+#                                        )    
 
-    groupchat = autogen.GroupChat(
-        # agents=[user_proxy, helper, assistant, predictor, critic],
-        agents=[user_proxy, helper, predictor, critic],
-        messages=[],
-        max_round=MAX_ITER,
-        speaker_selection_method=state_transition,
-        allow_repeat_speaker=True,
+# # -------------------- Conversation Logic. Edit to change your first message based on the Task you want to get done. ----------------------------- # 
+#     if len(groupchat.messages) == 0: 
+#       await cl.make_async(user_proxy.initiate_chat)( manager, message=CONTEXT, )
+#     elif len(groupchat.messages) < MAX_ITER:
+#       await cl.make_async(user_proxy.send)( manager, message=CONTEXT, )
+#     elif len(groupchat.messages) == MAX_ITER:  
+#       await cl.make_async(user_proxy.send)( manager, message="exit", )
+
+
+    user_proxy.reset()
+    predictor.reset()
+    critic.reset()
+    assistant.reset()
+
+    # Initial conversation check
+    if len(cl.user_session.get("messages", [])) == 0:
+        # Register and start the nested chat sequence
+        assistant.register_nested_chats(
+            nested_chat_queue,
+            trigger=user_proxy,
+        )
+
+        await cl.make_async(user_proxy.initiate_chat)(
+            assistant,
+            message=CONTEXT,
+            max_turns=1,
+            summary_method="last_msg",
+        )
+        # await cl.Message(content="Nested chat process initiated.").send()
+
+    # # Check for completion based on message length
+    # current_messages = cl.user_session.get("messages", [])
+    # if len(current_messages) >= MAX_ITER:
+    #     await cl.make_async(user_proxy.send)(
+    #         assistant,
+    #         message="exit",
+    #     )
+    #     await cl.Message(content="Chat session has reached the maximum iterations and is now terminating.").send()
+
+    await cl.make_async(user_proxy.send)(
+        recipient=assistant,
+        message="exit"
     )
-        
-    manager = autogen.GroupChatManager(groupchat=groupchat,
-                                       llm_config=llm_config_autogen, 
-                                       is_termination_msg=lambda x: x.get("content", "") and x.get("content", "").rstrip().endswith("TERMINATE"),
-                                       code_execution_config=False,
-                                       )    
-
-# -------------------- Conversation Logic. Edit to change your first message based on the Task you want to get done. ----------------------------- # 
-    if len(groupchat.messages) == 0: 
-      await cl.make_async(user_proxy.initiate_chat)( manager, message=CONTEXT, )
-    elif len(groupchat.messages) < MAX_ITER:
-      await cl.make_async(user_proxy.send)( manager, message=CONTEXT, )
-    elif len(groupchat.messages) == MAX_ITER:  
-      await cl.make_async(user_proxy.send)( manager, message="exit", )

@@ -16,6 +16,7 @@ from marker.pdf.extract_text import get_length_of_text
 from marker.settings import settings
 import traceback
 import json
+import torch
 
 configure_logging()
 
@@ -130,9 +131,10 @@ def multiple():
 
 
 def single():
-    fname = 'input/toray/Toray-Cetex-TC910_PA6_PDS.pdf' #'input/solvay/Composite_Aerospace_Brochure.pdf'
+    # fname = 'input/toray/Toray-Cetex-TC910_PA6_PDS.pdf' #'input/solvay/Composite_Aerospace_Brochure.pdf'
+    fname = 'input/pdf/AHA Guidelines for Critic_Until Stage A.pdf'
     model_lst = load_all_models()
-    full_text, images, out_meta = convert_single_pdf(fname, model_lst, max_pages=None, langs=None, batch_multiplier=2, start_page=None)
+    full_text, images, out_meta = convert_single_pdf(fname, model_lst, max_pages=None, langs=None, batch_multiplier=1, start_page=None)
 
     fname = os.path.basename(fname)
 
@@ -143,5 +145,6 @@ def single():
 
 
 if __name__ == "__main__":
+    torch.mps.empty_cache()
     single()
     #multiple()

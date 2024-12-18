@@ -1,0 +1,155 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script src="lib/bindings/utils.js"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 600px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#97c2fc", "description": "", "id": "DISEASE", "label": "DISEASE", "shape": "dot", "size": 10, "source_id": "cff07a4e25cee8ad9cbd6158d3389fdf", "type": ""}, {"color": "#97c2fc", "description": "", "id": "PATIENT", "label": "PATIENT", "shape": "dot", "size": 10, "source_id": "cff07a4e25cee8ad9cbd6158d3389fdf", "type": ""}, {"color": "#97c2fc", "description": "", "id": "PROCEDURE", "label": "PROCEDURE", "shape": "dot", "size": 10, "source_id": "cff07a4e25cee8ad9cbd6158d3389fdf", "type": ""}, {"color": "#97c2fc", "description": "", "id": "INFECTION", "label": "INFECTION", "shape": "dot", "size": 10, "source_id": "cff07a4e25cee8ad9cbd6158d3389fdf", "type": ""}, {"color": "#97c2fc", "description": "", "id": "FAMILY_HISTORY", "label": "FAMILY_HISTORY", "shape": "dot", "size": 10, "source_id": "cff07a4e25cee8ad9cbd6158d3389fdf", "type": ""}, {"color": "#97c2fc", "description": "", "id": "EXAMINATION", "label": "EXAMINATION", "shape": "dot", "size": 10, "source_id": "cff07a4e25cee8ad9cbd6158d3389fdf", "type": ""}, {"color": "#97c2fc", "description": "", "id": "LAB_RESULTS", "label": "LAB_RESULTS", "shape": "dot", "size": 10, "source_id": "cff07a4e25cee8ad9cbd6158d3389fdf", "type": ""}, {"color": "#97c2fc", "description": "Topical cream for eczema)  (\"entity\"", "id": "CREAM SIG", "label": "CREAM SIG", "shape": "dot", "size": 10, "source_id": "157584a8ebe8c620eaa13733d6f69610", "type": "PRODUCT"}]);
+                  edges = new vis.DataSet([{"description": "The patient was diagnosed with psoriatic arthritis", "from": "DISEASE", "source_id": "cff07a4e25cee8ad9cbd6158d3389fdf", "to": "PATIENT", "width": 1.0}, {"description": "The patient underwent a posterior L5/S1 fusion surgery due to severe foraminal stenosis and isolated L5 radicular symptoms", "from": "PATIENT", "source_id": "cff07a4e25cee8ad9cbd6158d3389fdf", "to": "PROCEDURE", "width": 1.0}, {"description": "The patient had an episode of sepsis with cholecystitis complicated by e.coli and abiotrophia/granulicatella bacteremia, treated with pip/tazo", "from": "PATIENT", "source_id": "cff07a4e25cee8ad9cbd6158d3389fdf", "to": "INFECTION", "width": 1.0}, {"description": "The patient\u0027s father died of MI at an unknown age. The patient\u0027s sister has multiple sclerosis.", "from": "PATIENT", "source_id": "cff07a4e25cee8ad9cbd6158d3389fdf", "to": "FAMILY_HISTORY", "width": 1.0}, {"description": "Vital signs: 98.1, 109, 133/79, 20, 95% RA; General: NAD, AAO x 3; Cardiovascular: Sinus tachycardia; Lungs: Diminished in bases bilaterally; Abdomen: Obese, right subcostal incision with staples and c/d/i; Extra: Warm, no c/c/e.", "from": "PATIENT", "source_id": "cff07a4e25cee8ad9cbd6158d3389fdf", "to": "EXAMINATION", "width": 1.0}, {"description": "White blood cell count - 10.5; Red blood cell count - 3.94*; Hemoglobin - 11.3*; Hematocrit - 35.1*; Mean corpuscular volume - 89; Mean corpuscular hemoglobin - 28.8; Mean corpuscular hemoglobin concentration - 32.3; Red cell distribution width - 14.6; Platelet count - [Redacted]Blood glucose - 94; Urea nitrogen - 20; Creatinine - 1.1; Sodium - 142; Potassium - 4.3; Chloride - 104; Bicarbonate - 30; Anion gap - 12.", "from": "PATIENT", "source_id": "cff07a4e25cee8ad9cbd6158d3389fdf", "to": "LAB_RESULTS", "width": 2.0}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
